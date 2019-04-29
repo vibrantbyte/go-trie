@@ -15,12 +15,3 @@ type TrieNode struct {
 	//节点数据
 	Data interface{}
 }
-
-//Add
-func (node *TrieNode) Add(key string,trie *TrieNode){
-	if node.Degree == 0 {
-		node.Child = make(map[string]*TrieNode)
-	}
-	node.Child[key] = trie
-	node.Degree ++
-}

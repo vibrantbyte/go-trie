@@ -56,7 +56,18 @@ func (lib *UrlLibrary) AddUrl(url string) {
 			data.PType = NormalPath
 			data.Len ++
 		}
+		lib.len ++
 	}
+}
+
+//GetLen 获取存储大小
+func (lib *UrlLibrary) GetLen() int{
+	return lib.len
+}
+
+//GetHost 获取host
+func (lib *UrlLibrary) GetHost() string{
+	return lib.host
 }
 
 //recursionInsertUrl
