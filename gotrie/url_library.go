@@ -7,6 +7,7 @@
 package gotrie
 
 import (
+	"github.com/vibrantbyte/go-trie/utils"
 	"strings"
 )
 
@@ -31,16 +32,22 @@ func CreateUrlLibrary(host string) *UrlLibrary{
 
 //AddUrl 添加url
 func (lib *UrlLibrary) AddUrl(url string) {
-	if HasText(url){
+	if utils.HasText(url){
 		//截取URL
-		urlSegment := TokenizeToStringArray(url,Spliter,true,true)
+		urlSegment := utils.TokenizeToStringArray(url,utils.Spliter,true,true)
 		if urlSegment != nil {
 			//判断根节点
 			if lib.root == nil {
 				lib.root = new(TrieNode)
 			}
 			temp := lib.root
+			pType := NormalPath
 			for index := range urlSegment {
+				strAddress := urlSegment[index]
+				if utils.GlobPattern.MatchString(*strAddress) {
+					pType = AntPath
+					break
+				}
 				temp = lib.recursionInsertUrl(temp,urlSegment[index])
 			}
 			//存储数据
@@ -53,11 +60,32 @@ func (lib *UrlLibrary) AddUrl(url string) {
 			//转化
 			data := temp.Data.(*NodeData)
 			data.UrlList = append(data.UrlList,&url)
-			data.PType = NormalPath
+			data.PType = pType
 			data.Len ++
 		}
 		lib.len ++
 	}
+}
+
+//RemoveUrl 删除url
+func (lib *UrlLibrary) RemoveUrl(url string) {
+	matcher := lib.matcherUrl(url)
+	if matcher == nil || matcher.Data == nil {
+		return
+	}
+	//删除url
+	data := matcher.Data.(*NodeData)
+	data.UrlList = lib.removeSlice(data.UrlList,url)
+}
+
+//Matcher
+func (lib *UrlLibrary) Matcher(url string) []*string {
+	matcher := lib.matcherUrl(url)
+	if matcher == nil || matcher.Data == nil {
+		return nil
+	}
+	data := matcher.Data.(*NodeData)
+	return data.UrlList
 }
 
 //GetLen 获取存储大小
@@ -88,4 +116,53 @@ func (lib *UrlLibrary) recursionInsertUrl(node *TrieNode,segment *string) *TrieN
 	node.Child[*segment] = tmp
 	node.Degree ++
 	return tmp
+}
+
+//matcherUrl
+func (lib *UrlLibrary) matcherUrl(url string) *TrieNode {
+	if utils.HasText(url){
+		//截取URL
+		urlSegment := utils.TokenizeToStringArray(url,utils.Spliter,true,true)
+		if urlSegment != nil {
+			//判断根节点
+			if lib.root == nil {
+				return nil
+			}
+			temp := lib.root
+			for index := range urlSegment {
+				strAddress := urlSegment[index]
+				if utils.GlobPattern.MatchString(*strAddress) {
+					break
+				}
+				temp = temp.Child[*strAddress]
+			}
+			return temp
+		}
+	}
+	return nil
+}
+
+//removeSlice
+func (lib *UrlLibrary) removeSlice(source []*string,url string) []*string{
+	if source == nil {
+		return nil
+	}
+	remove := false
+	len := len(source)
+	for index := range source  {
+		strAddress := source[index]
+		if strings.EqualFold(*strAddress,url) {
+			remove = true
+		}
+		if remove {
+			if len > index {
+				source[index] = source[index+1]
+			}
+		}
+		//删除最后一个
+		if len == index+1 {
+			source[index] = nil
+		}
+	}
+	return source
 }

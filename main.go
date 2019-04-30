@@ -16,10 +16,13 @@ func main(){
 
 	urlLibrary := gotrie.CreateUrlLibrary("www.baidu.com")
 
-	urlLibrary.AddUrl("/home/work/name/get")
-	urlLibrary.AddUrl("/home/vibrant/name/get")
-	urlLibrary.AddUrl("/home/vibrant/1/a")
-
+	urlLibrary.AddUrl("/home/a")
+	urlLibrary.AddUrl("/home/b")
+	urlLibrary.AddUrl("/home/c")
+	urlLibrary.AddUrl("/home/e/*")
+	urlLibrary.AddUrl("/home/f/**")
+	urlLibrary.AddUrl("/home/c/?")
+	urlLibrary.AddUrl("/home/c/{ss}/1000")
 
 	fmt.Print(urlLibrary)
 

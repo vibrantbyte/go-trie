@@ -4,7 +4,7 @@
 @File : string_util
 @Software: GoLand
 */
-package gotrie
+package utils
 
 import (
 "strings"
