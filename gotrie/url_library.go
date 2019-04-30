@@ -53,15 +53,11 @@ func (lib *UrlLibrary) AddUrl(url string) {
 			//存储数据
 			if temp.Data == nil {
 				data := new(NodeData)
-				data.Len = 0
-				data.UrlList = make([]*string,0)
 				temp.Data = data
 			}
 			//转化
 			data := temp.Data.(*NodeData)
-			data.UrlList = append(data.UrlList,&url)
-			data.PType = pType
-			data.Len ++
+			data.AddUrl(url,pType)
 		}
 		lib.len ++
 	}
@@ -75,7 +71,10 @@ func (lib *UrlLibrary) RemoveUrl(url string) {
 	}
 	//删除url
 	data := matcher.Data.(*NodeData)
-	lib.removeSlice(data.UrlList,url)
+	if data.RemoveUrl(url){
+		lib.len --
+		data.Len --
+	}
 }
 
 //Matcher
@@ -145,31 +144,4 @@ func (lib *UrlLibrary) matcherUrl(url string) *TrieNode {
 		}
 	}
 	return nil
-}
-
-//removeSlice
-func (lib *UrlLibrary) removeSlice(source []*string,url string) []*string{
-	if source == nil {
-		return nil
-	}
-	remove := false
-	len := len(source)
-	for index := range source  {
-		strAddress := source[index]
-		if strings.EqualFold(*strAddress,url) {
-			remove = true
-		}
-		if remove {
-			if len == index+1 {
-				source[index] = nil
-				break
-			}
-			//移动元素
-			if len > index {
-				source[index] = source[index+1]
-			}
-		}
-
-	}
-	return source
 }

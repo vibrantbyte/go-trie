@@ -6,6 +6,8 @@
 */
 package gotrie
 
+import "strings"
+
 type PatternType int
 
 const(
@@ -25,4 +27,41 @@ type NodeData struct {
 	PType PatternType
 	//url存储
 	UrlList []*string
+}
+
+//AddUrl
+func (data *NodeData) AddUrl(url string,pType PatternType){
+	if data.UrlList == nil {
+		data.UrlList = make([]*string,0)
+		data.PType = pType
+	}
+	data.Len ++
+	data.UrlList = append(data.UrlList,&url)
+}
+
+//RemoveUrl
+func (data *NodeData) RemoveUrl(url string) bool{
+	if data.UrlList == nil {
+		return false
+	}
+	remove := false
+	len := len(data.UrlList)
+	for index := range data.UrlList  {
+		strAddress := data.UrlList[index]
+		if strings.EqualFold(*strAddress,url) {
+			remove = true
+		}
+		if remove {
+			if len == index+1 {
+				data.UrlList[index] = nil
+				break
+			}
+			//移动元素
+			if len > index {
+				data.UrlList[index] = data.UrlList[index+1]
+			}
+		}
+
+	}
+	return remove
 }
