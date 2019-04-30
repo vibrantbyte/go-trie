@@ -75,7 +75,7 @@ func (lib *UrlLibrary) RemoveUrl(url string) {
 	}
 	//删除url
 	data := matcher.Data.(*NodeData)
-	data.UrlList = lib.removeSlice(data.UrlList,url)
+	lib.removeSlice(data.UrlList,url)
 }
 
 //Matcher
@@ -134,6 +134,11 @@ func (lib *UrlLibrary) matcherUrl(url string) *TrieNode {
 				if utils.GlobPattern.MatchString(*strAddress) {
 					break
 				}
+				//child
+				child := temp.Child[*strAddress]
+				if child == nil {
+					break
+				}
 				temp = temp.Child[*strAddress]
 			}
 			return temp
@@ -155,14 +160,16 @@ func (lib *UrlLibrary) removeSlice(source []*string,url string) []*string{
 			remove = true
 		}
 		if remove {
+			if len == index+1 {
+				source[index] = nil
+				break
+			}
+			//移动元素
 			if len > index {
 				source[index] = source[index+1]
 			}
 		}
-		//删除最后一个
-		if len == index+1 {
-			source[index] = nil
-		}
+
 	}
 	return source
 }
