@@ -142,10 +142,6 @@ func (lib *UrlLibrary) matcherUrl(url string) (*TrieNode,*string,[]*string) {
 			for index := range urlSegment {
 				final = index
 				strAddress := urlSegment[index]
-				//进行前缀拼接
-				prefixUrl += utils.Spliter
-				prefixUrl += *strAddress
-
 				//处理本节点及后续节点
 				if utils.GlobPattern.MatchString(*strAddress) {
 					break
@@ -155,6 +151,11 @@ func (lib *UrlLibrary) matcherUrl(url string) (*TrieNode,*string,[]*string) {
 				if child == nil {
 					break
 				}
+				//进行前缀拼接
+				prefixUrl += utils.Spliter
+				prefixUrl += *strAddress
+
+				//获取下一个节点
 				temp = temp.Child[*strAddress]
 			}
 

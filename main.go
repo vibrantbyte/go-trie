@@ -24,37 +24,17 @@ func main(){
 	urlLibrary.AddUrl("/home/c/?")
 	urlLibrary.AddUrl("/home/c/{ss}/1000")
 	urlLibrary.AddUrl("/home/c/{ss}/1000")
+	urlLibrary.AddUrl("/home/c/c")
+	urlLibrary.AddUrl("/home/c/c/c")
+	urlLibrary.AddUrl("/home/c/c/*")
 
 
-	urls := urlLibrary.Matcher("/home/c")
+	urls := urlLibrary.Matcher("/home/c/1/1000")
 	if urls != nil {
 		for index:= range urls  {
 			fmt.Println(*urls[index])
 		}
 	}
-
-	urlLibrary.RemoveUrl("/home/c/{ss}/1000")
-	urls = urlLibrary.Matcher("/home/c")
-	if urls != nil {
-		for index:= range urls  {
-			value := urls[index]
-			if value != nil{
-				fmt.Println(*value)
-			}
-		}
-	}
-
-	urlLibrary.AddUrl("/home/c/{ss}/1000")
-	urls = urlLibrary.Matcher("/home/c")
-	if urls != nil {
-		for index:= range urls  {
-			value := urls[index]
-			if value != nil{
-				fmt.Println(*value)
-			}
-		}
-	}
-
 
 
 	fmt.Print(urlLibrary)
