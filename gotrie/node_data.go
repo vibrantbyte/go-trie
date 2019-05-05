@@ -6,7 +6,10 @@
 */
 package gotrie
 
-import "strings"
+import (
+	"github.com/vibrantbyte/go-trie/utils"
+	"strings"
+)
 
 type PatternType int
 
@@ -23,45 +26,86 @@ const(
 type NodeData struct {
 	//长度
 	Len int
-	//模式
-	PType PatternType
 	//url存储
-	UrlList []*string
+	UrlMap map[string]*UrlData
 }
 
+//UrlData url 存储类
+type UrlData struct {
+	Url *string
+	PType PatternType
+}
+
+
 //AddUrl
-func (data *NodeData) AddUrl(url string,pType PatternType){
-	if data.UrlList == nil {
-		data.UrlList = make([]*string,0)
-		data.PType = pType
+func (data *NodeData) AddUrl(urlSegment []*string,pType PatternType){
+	if data.UrlMap == nil {
+		data.UrlMap = make(map[string]*UrlData)
 	}
 	data.Len ++
-	data.UrlList = append(data.UrlList,&url)
+	//存储对象
+	uData := new(UrlData)
+	uData.PType = pType
+	uData.Url = data.toUrl(urlSegment)
+	//存储url对象
+	data.UrlMap[*uData.Url] = uData
 }
 
 //RemoveUrl
-func (data *NodeData) RemoveUrl(url string) bool{
-	if data.UrlList == nil {
+func (data *NodeData) RemoveUrl(urlSegment []*string) bool{
+	if data.UrlMap == nil {
 		return false
 	}
 	remove := false
-	len := len(data.UrlList)
-	for index := range data.UrlList  {
-		strAddress := data.UrlList[index]
-		if strings.EqualFold(*strAddress,url) {
-			remove = true
-		}
-		if remove {
-			if len == index+1 {
-				data.UrlList[index] = nil
-				break
-			}
-			//移动元素
-			if len > index {
-				data.UrlList[index] = data.UrlList[index+1]
-			}
-		}
+	url := data.toUrl(urlSegment)
+	urlData := data.UrlMap[*url]
+	if urlData == nil {
+		return false
+	}
 
+	for key := range data.UrlMap  {
+		if strings.EqualFold(key,*urlData.Url) {
+			remove = true
+			//删除url
+			delete(data.UrlMap,key)
+			break
+		}
 	}
 	return remove
+}
+
+//GetUrlList
+func (data *NodeData) GetUrlList(prefix *string) []*string {
+	urlList := make([]*string,0)
+	if data.UrlMap != nil {
+		for key := range data.UrlMap {
+			urlData := data.UrlMap[key]
+			switch urlData.PType {
+				case NormalPath:
+					urlList = append(urlList, prefix)
+					break
+				case AntPath:
+					url := *prefix + *urlData.Url
+					urlList = append(urlList, &url)
+					break
+				case RegexPath:
+					break
+				default:
+					break
+			}
+		}
+	}
+	return urlList
+}
+
+//toUrl
+func (data *NodeData) toUrl(urlSegment []*string) *string{
+	result := ""
+	if urlSegment != nil {
+		for index := range urlSegment {
+			result += utils.Spliter
+			result += *urlSegment[index]
+		}
+	}
+	return &result
 }

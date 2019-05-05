@@ -11,6 +11,8 @@ import (
 	"strings"
 )
 
+const TreeMaxLength  = 1 << 16
+
 //UrlLibrary url存储库
 type UrlLibrary struct {
 	//root 根节点
@@ -32,6 +34,9 @@ func CreateUrlLibrary(host string) *UrlLibrary{
 
 //AddUrl 添加url
 func (lib *UrlLibrary) AddUrl(url string) {
+	if lib.GetLen() > TreeMaxLength {
+		return
+	}
 	if utils.HasText(url){
 		//截取URL
 		urlSegment := utils.TokenizeToStringArray(url,utils.Spliter,true,true)
@@ -40,9 +45,13 @@ func (lib *UrlLibrary) AddUrl(url string) {
 			if lib.root == nil {
 				lib.root = new(TrieNode)
 			}
+			//存储过程变量
 			temp := lib.root
 			pType := NormalPath
+			final := 0
+
 			for index := range urlSegment {
+				final = index
 				strAddress := urlSegment[index]
 				if utils.GlobPattern.MatchString(*strAddress) {
 					pType = AntPath
@@ -57,7 +66,7 @@ func (lib *UrlLibrary) AddUrl(url string) {
 			}
 			//转化
 			data := temp.Data.(*NodeData)
-			data.AddUrl(url,pType)
+			data.AddUrl(urlSegment[final:],pType)
 		}
 		lib.len ++
 	}
@@ -65,13 +74,13 @@ func (lib *UrlLibrary) AddUrl(url string) {
 
 //RemoveUrl 删除url
 func (lib *UrlLibrary) RemoveUrl(url string) {
-	matcher := lib.matcherUrl(url)
+	matcher,_,other := lib.matcherUrl(url)
 	if matcher == nil || matcher.Data == nil {
 		return
 	}
 	//删除url
 	data := matcher.Data.(*NodeData)
-	if data.RemoveUrl(url){
+	if data.RemoveUrl(other){
 		lib.len --
 		data.Len --
 	}
@@ -79,12 +88,12 @@ func (lib *UrlLibrary) RemoveUrl(url string) {
 
 //Matcher
 func (lib *UrlLibrary) Matcher(url string) []*string {
-	matcher := lib.matcherUrl(url)
+	matcher,prefix,_ := lib.matcherUrl(url)
 	if matcher == nil || matcher.Data == nil {
 		return nil
 	}
 	data := matcher.Data.(*NodeData)
-	return data.UrlList
+	return data.GetUrlList(prefix)
 }
 
 //GetLen 获取存储大小
@@ -118,18 +127,26 @@ func (lib *UrlLibrary) recursionInsertUrl(node *TrieNode,segment *string) *TrieN
 }
 
 //matcherUrl
-func (lib *UrlLibrary) matcherUrl(url string) *TrieNode {
+func (lib *UrlLibrary) matcherUrl(url string) (*TrieNode,*string,[]*string) {
+	prefixUrl := utils.EmptyString
 	if utils.HasText(url){
 		//截取URL
 		urlSegment := utils.TokenizeToStringArray(url,utils.Spliter,true,true)
 		if urlSegment != nil {
 			//判断根节点
 			if lib.root == nil {
-				return nil
+				return nil,&prefixUrl,nil
 			}
 			temp := lib.root
+			final := 0
 			for index := range urlSegment {
+				final = index
 				strAddress := urlSegment[index]
+				//进行前缀拼接
+				prefixUrl += utils.Spliter
+				prefixUrl += *strAddress
+
+				//处理本节点及后续节点
 				if utils.GlobPattern.MatchString(*strAddress) {
 					break
 				}
@@ -140,8 +157,10 @@ func (lib *UrlLibrary) matcherUrl(url string) *TrieNode {
 				}
 				temp = temp.Child[*strAddress]
 			}
-			return temp
+
+			//otherUrl
+			return temp,&prefixUrl,urlSegment[final:]
 		}
 	}
-	return nil
+	return nil,&prefixUrl,nil
 }
