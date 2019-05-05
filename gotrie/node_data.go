@@ -9,6 +9,7 @@ package gotrie
 import (
 	"github.com/vibrantbyte/go-trie/utils"
 	"strings"
+	"sync"
 	"sync/atomic"
 )
 
@@ -28,7 +29,7 @@ type NodeData struct {
 	//长度
 	Len int64
 	//url存储
-	UrlMap map[string]*UrlData
+	UrlMap *sync.Map
 }
 
 //UrlData url 存储类
@@ -41,7 +42,7 @@ type UrlData struct {
 //AddUrl
 func (data *NodeData) AddUrl(urlSegment []*string,pType PatternType){
 	if data.UrlMap == nil {
-		data.UrlMap = make(map[string]*UrlData)
+		data.UrlMap = new(sync.Map)
 	}
 	atomic.AddInt64(&data.Len,1)
 	//存储对象
@@ -49,7 +50,7 @@ func (data *NodeData) AddUrl(urlSegment []*string,pType PatternType){
 	uData.PType = pType
 	uData.Url = data.toUrl(urlSegment)
 	//存储url对象
-	data.UrlMap[*uData.Url] = uData
+	data.UrlMap.Store(*uData.Url,uData)
 }
 
 //RemoveUrl
@@ -59,20 +60,20 @@ func (data *NodeData) RemoveUrl(urlSegment []*string) bool{
 	}
 	remove := false
 	url := data.toUrl(urlSegment)
-	urlData := data.UrlMap[*url]
-	if urlData == nil {
+	urlData,ok := data.UrlMap.Load(*url)
+	if !ok || urlData == nil {
 		return false
 	}
-
-	for key := range data.UrlMap  {
-		if strings.EqualFold(key,*urlData.Url) {
+	data.UrlMap.Range(func(key, value interface{}) bool {
+		if strings.EqualFold(key.(string),*urlData.(*UrlData).Url) {
 			remove = true
 			//删除url
-			delete(data.UrlMap,key)
+			data.UrlMap.Delete(key)
 			atomic.AddInt64(&data.Len,-1)
-			break
+			return false
 		}
-	}
+		return true
+	})
 	return remove
 }
 
@@ -80,22 +81,23 @@ func (data *NodeData) RemoveUrl(urlSegment []*string) bool{
 func (data *NodeData) GetUrlList(prefix *string) []*string {
 	urlList := make([]*string,0)
 	if data.UrlMap != nil {
-		for key := range data.UrlMap {
-			urlData := data.UrlMap[key]
+		data.UrlMap.Range(func(key, value interface{}) bool {
+			urlData := value.(*UrlData)
 			switch urlData.PType {
-				case NormalPath:
-					urlList = append(urlList, prefix)
-					break
-				case AntPath:
-					url := *prefix + *urlData.Url
-					urlList = append(urlList, &url)
-					break
-				case RegexPath:
-					break
-				default:
-					break
+			case NormalPath:
+				urlList = append(urlList, prefix)
+				break
+			case AntPath:
+				url := *prefix + *urlData.Url
+				urlList = append(urlList, &url)
+				break
+			case RegexPath:
+				break
+			default:
+				break
 			}
-		}
+			return true
+		})
 	}
 	return urlList
 }
