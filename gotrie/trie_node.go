@@ -6,12 +6,14 @@
 */
 package gotrie
 
+import "sync"
+
 //TrieNode 树节点
 type TrieNode struct {
 	//孩子节点
-	Child map[string]*TrieNode
+	Child *sync.Map
 	//孩子节点的度
-	Degree int
+	Degree int64
 	//节点数据
 	Data interface{}
 }

@@ -9,6 +9,7 @@ package gotrie
 import (
 	"github.com/vibrantbyte/go-trie/utils"
 	"strings"
+	"sync/atomic"
 )
 
 type PatternType int
@@ -25,7 +26,7 @@ const(
 //NodeData 节点数据
 type NodeData struct {
 	//长度
-	Len int
+	Len int64
 	//url存储
 	UrlMap map[string]*UrlData
 }
@@ -42,7 +43,7 @@ func (data *NodeData) AddUrl(urlSegment []*string,pType PatternType){
 	if data.UrlMap == nil {
 		data.UrlMap = make(map[string]*UrlData)
 	}
-	data.Len ++
+	atomic.AddInt64(&data.Len,1)
 	//存储对象
 	uData := new(UrlData)
 	uData.PType = pType
@@ -68,6 +69,7 @@ func (data *NodeData) RemoveUrl(urlSegment []*string) bool{
 			remove = true
 			//删除url
 			delete(data.UrlMap,key)
+			atomic.AddInt64(&data.Len,-1)
 			break
 		}
 	}

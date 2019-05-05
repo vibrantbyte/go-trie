@@ -9,8 +9,11 @@ package gotrie
 import (
 	"github.com/vibrantbyte/go-trie/utils"
 	"strings"
+	"sync"
+	"sync/atomic"
 )
 
+//基于性能考虑，并且严格限定
 const TreeMaxLength  = 1 << 16
 
 //UrlLibrary url存储库
@@ -18,7 +21,7 @@ type UrlLibrary struct {
 	//root 根节点
 	root *TrieNode
 	//存储器的大小
-	len int
+	len int64
 	//存储的域名
 	host string
 }
@@ -68,7 +71,7 @@ func (lib *UrlLibrary) AddUrl(url string) {
 			data := temp.Data.(*NodeData)
 			data.AddUrl(urlSegment[final:],pType)
 		}
-		lib.len ++
+		atomic.AddInt64(&lib.len,1)
 	}
 }
 
@@ -81,8 +84,7 @@ func (lib *UrlLibrary) RemoveUrl(url string) {
 	//删除url
 	data := matcher.Data.(*NodeData)
 	if data.RemoveUrl(other){
-		lib.len --
-		data.Len --
+		atomic.AddInt64(&lib.len,-1)
 	}
 }
 
@@ -97,8 +99,8 @@ func (lib *UrlLibrary) Matcher(url string) []*string {
 }
 
 //GetLen 获取存储大小
-func (lib *UrlLibrary) GetLen() int{
-	return lib.len
+func (lib *UrlLibrary) GetLen() int64{
+	return atomic.LoadInt64(&lib.len)
 }
 
 //GetHost 获取host
@@ -108,21 +110,29 @@ func (lib *UrlLibrary) GetHost() string{
 
 //recursionInsertUrl
 func (lib *UrlLibrary) recursionInsertUrl(node *TrieNode,segment *string) *TrieNode {
-	if node.Degree > 0 {
+	var tmp *TrieNode
+	if atomic.LoadInt64(&node.Degree) > 0 {
 		//开始循环判断是否存在
-		for k,n := range node.Child {
-			if strings.EqualFold(*segment,k) {
-				return n
+		node.Child.Range(func(key, value interface{}) bool {
+			if strings.EqualFold(*segment,key.(string)) {
+				//定位到指定节点
+				tmp = value.(*TrieNode)
+				return false
 			}
+			return true
+		})
+		//如果定位到则返回
+		if tmp != nil {
+			return tmp
 		}
 	}else{
 		//直接创建
-		node.Child = make(map[string]*TrieNode)
+		node.Child =  new(sync.Map)
 	}
-	tmp := new(TrieNode)
+	tmp = new(TrieNode)
 	//如果不存在创建
-	node.Child[*segment] = tmp
-	node.Degree ++
+	node.Child.Store(*segment,tmp)
+	atomic.AddInt64(&node.Degree,1)
 	return tmp
 }
 
@@ -147,8 +157,8 @@ func (lib *UrlLibrary) matcherUrl(url string) (*TrieNode,*string,[]*string) {
 					break
 				}
 				//child
-				child := temp.Child[*strAddress]
-				if child == nil {
+				child,ok := temp.Child.Load(*strAddress)
+				if !ok || child == nil {
 					break
 				}
 				//进行前缀拼接
@@ -156,7 +166,7 @@ func (lib *UrlLibrary) matcherUrl(url string) (*TrieNode,*string,[]*string) {
 				prefixUrl += *strAddress
 
 				//获取下一个节点
-				temp = temp.Child[*strAddress]
+				temp = child.(*TrieNode)
 			}
 
 			//otherUrl

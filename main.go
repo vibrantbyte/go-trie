@@ -13,6 +13,7 @@ import (
 
 func main(){
 	fmt.Println("This is a trie.")
+	fmt.Println(1<<16)
 
 	urlLibrary := gotrie.CreateUrlLibrary("www.baidu.com")
 
