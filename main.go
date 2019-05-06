@@ -13,7 +13,6 @@ import (
 
 func main(){
 	fmt.Println("This is a trie.")
-	fmt.Println(1<<16)
 
 	urlLibrary := gotrie.CreateUrlLibrary("www.baidu.com")
 
@@ -37,6 +36,41 @@ func main(){
 		}
 	}
 
+
+	fmt.Println("-------------------------")
+	urls = urlLibrary.Matcher("/home/c/c/1000")
+	if urls != nil {
+		for index:= range urls  {
+			fmt.Println(*urls[index])
+		}
+	}
+
+
+	fmt.Println("-------------------------")
+	urls = urlLibrary.Matcher("/home/c/c/c/this")
+	if urls != nil {
+		for index:= range urls  {
+			fmt.Println(*urls[index])
+		}
+	}
+
+
+	fmt.Println("-------------------------")
+	urls = urlLibrary.Matcher("/home/g")
+	if urls != nil {
+		for index:= range urls  {
+			fmt.Println(*urls[index])
+		}
+	}
+
+
+	fmt.Println("-------------------------")
+	urls = urlLibrary.Matcher("/home/a")
+	if urls != nil {
+		for index:= range urls  {
+			fmt.Println(*urls[index])
+		}
+	}
 
 	fmt.Print(urlLibrary)
 

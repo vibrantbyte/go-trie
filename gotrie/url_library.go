@@ -156,6 +156,10 @@ func (lib *UrlLibrary) matcherUrl(url string) (*TrieNode,*string,[]*string) {
 				if utils.GlobPattern.MatchString(*strAddress) {
 					break
 				}
+				//判断子节点是否为空
+				if temp.Child == nil {
+					break
+				}
 				//child
 				child,ok := temp.Child.Load(*strAddress)
 				if !ok || child == nil {
